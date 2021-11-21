@@ -1,2 +1,2 @@
 # paprika-go
-A paprika recipe app management go library
+A simple go library for creating and managing your paprika recipes.
