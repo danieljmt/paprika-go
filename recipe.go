@@ -2,9 +2,12 @@ package paprika
 
 import (
 	"encoding/base64"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -36,6 +39,7 @@ type Recipe struct {
 	PhotoData       string   `json:"photo_data"`
 }
 
+// NewRecipe creates a valid paprika recipe
 func NewRecipe(name, ingredients, directions string) *Recipe {
 	uid := uuid.NewMD5(uuid.Nil, []byte(name)).String()
 	r := &Recipe{
@@ -48,7 +52,11 @@ func NewRecipe(name, ingredients, directions string) *Recipe {
 	return r
 }
 
+// SetImageURL sets the recipe image from an image URL
 func (r *Recipe) SetImageURL(url string) error {
+	if r.UID == "" {
+		return errors.New("recipe must have a UID")
+	}
 	resp, err := http.Get(url) // #nosec G107 needs to be using a variable
 	if err != nil {
 		return err
@@ -58,15 +66,25 @@ func (r *Recipe) SetImageURL(url string) error {
 	if err != nil {
 		return err
 	}
+
+	imParts := strings.Split(url, ".")
+	r.Photo = fmt.Sprintf("%s.%s", r.UID, imParts[len(imParts)-1])
+	r.ImageURL = url
 	r.PhotoData = base64.StdEncoding.EncodeToString(dat)
 	return nil
 }
 
+// SetImage sets the recipe image from a local image file
 func (r *Recipe) SetImage(path string) error {
+	if r.UID == "" {
+		return errors.New("recipe must have a UID")
+	}
 	dat, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
+	imParts := strings.Split(path, ".")
+	r.Photo = fmt.Sprintf("%s.%s", r.UID, imParts[len(imParts)-1])
 	r.PhotoData = base64.StdEncoding.EncodeToString(dat)
 	return nil
 }
